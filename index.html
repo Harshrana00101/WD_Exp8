@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Experiment 8: Books REST API Dashboard</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .method-badge { min-width: 65px; font-weight: 600; font-size: 0.8rem; }
+    </style>
+</head>
+<body class="bg-light py-5">
+
+    <div class="container">
+        <!-- Header -->
+        <div class="text-center mb-5">
+            <span class="badge bg-primary px-3 py-2 rounded-pill mb-2">Node.js & Express.js RESTful API</span>
+            <h1 class="display-6 fw-bold text-dark"><i class="bi bi-server text-primary me-2"></i>Book Collection Management</h1>
+            <p class="text-secondary">Full CRUD Operations: Create, Read, Update, Delete with RESTful JSON endpoints</p>
+            <div id="modeBanner" class="alert alert-info d-inline-block py-2 px-3 small mb-0">
+                <i class="bi bi-info-circle-fill me-1"></i>
+                <span id="modeStatus">GitHub Pages Client Mode: Simulating API server responses locally in browser</span>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <!-- Left Column: Add / Edit Form -->
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-primary text-white py-3">
+                        <h5 class="mb-0 fw-bold" id="formHeading"><i class="bi bi-book me-2"></i>Add Book</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <form id="bookForm">
+                            <input type="hidden" id="bookId">
+                            <div class="mb-3">
+                                <label for="bookTitle" class="form-label fw-semibold">Title</label>
+                                <input type="text" class="form-control" id="bookTitle" placeholder="e.g. Deep Work" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="bookAuthor" class="form-label fw-semibold">Author</label>
+                                <input type="text" class="form-control" id="bookAuthor" placeholder="e.g. Cal Newport" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="bookGenre" class="form-label fw-semibold">Genre</label>
+                                <input type="text" class="form-control" id="bookGenre" placeholder="e.g. Productivity">
+                            </div>
+                            <div class="mb-3">
+                                <label for="bookYear" class="form-label fw-semibold">Publication Year</label>
+                                <input type="number" class="form-control" id="bookYear" placeholder="e.g. 2016">
+                            </div>
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary" id="submitBtn">
+                                    <i class="bi bi-plus-circle me-1"></i> Add Book
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary d-none" id="cancelBtn" onclick="resetForm()">
+                                    Cancel Edit
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- API Endpoints Spec Card -->
+                <div class="card border-0 shadow-sm mt-4">
+                    <div class="card-header bg-dark text-white py-2">
+                        <small class="fw-bold"><i class="bi bi-code-square me-2"></i>REST Endpoints</small>
+                    </div>
+                    <div class="card-body p-3 small">
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge bg-success method-badge me-2">GET</span>
+                            <code>/api/books</code>
+                        </div>
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge bg-success method-badge me-2">GET</span>
+                            <code>/api/books/:id</code>
+                        </div>
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge bg-primary method-badge me-2">POST</span>
+                            <code>/api/books</code>
+                        </div>
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge bg-warning text-dark method-badge me-2">PUT</span>
+                            <code>/api/books/:id</code>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <span class="badge bg-danger method-badge me-2">DELETE</span>
+                            <code>/api/books/:id</code>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Books Table & Live API Interactor -->
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 fw-bold">Live Book Inventory</h5>
+                        <button class="btn btn-sm btn-outline-primary" onclick="loadBooks()">
+                            <i class="bi bi-arrow-clockwise me-1"></i> Refresh
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Title</th>
+                                        <th>Author</th>
+                                        <th>Genre</th>
+                                        <th>Year</th>
+                                        <th class="text-end">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="booksTableBody">
+                                    <!-- Dynamic rows -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="tableEmpty" class="text-center py-4 text-muted d-none">
+                            <p class="mb-0">No books found in database.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- API Response Output Console -->
+                <div class="card border-0 shadow-sm mt-4">
+                    <div class="card-header bg-secondary text-white py-2 d-flex justify-content-between align-items-center">
+                        <small class="fw-bold"><i class="bi bi-terminal me-2"></i>Latest JSON API Response</small>
+                        <span id="responseStatus" class="badge bg-light text-dark">Ready</span>
+                    </div>
+                    <div class="card-body bg-dark text-light p-3">
+                        <pre id="apiConsole" class="mb-0" style="max-height: 200px; overflow-y: auto; font-size: 0.82rem;"><code>// Responses will appear here in real time...</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Bundle JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // In-memory / localStorage database fallback for static GitHub Pages hosting
+        const DEFAULT_BOOKS = [
+            { id: 1, title: "Introduction to Algorithms", author: "Thomas H. Cormen", genre: "Computer Science", year: 2009 },
+            { id: 2, title: "Hands-On Machine Learning with Scikit-Learn, Keras, and TensorFlow", author: "Aurélien Géron", genre: "Data Science", year: 2019 },
+            { id: 3, title: "Clean Code: A Handbook of Agile Software Craftsmanship", author: "Robert C. Martin", genre: "Software Engineering", year: 2008 }
+        ];
+
+        let localBooks = JSON.parse(localStorage.getItem('exp8_books')) || DEFAULT_BOOKS;
+        let isStaticHosted = window.location.hostname.includes('github.io');
+
+        function saveLocalBooks() {
+            localStorage.setItem('exp8_books', JSON.stringify(localBooks));
+        }
+
+        // Fetch / Load all books
+        async function loadBooks() {
+            if (isStaticHosted) {
+                const responseData = { success: true, count: localBooks.length, data: localBooks };
+                updateConsole('GET /api/books (Simulated)', 200, responseData);
+                renderTable(localBooks);
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/books');
+                const data = await res.json();
+                updateConsole('GET /api/books', res.status, data);
+                renderTable(data.data || []);
+            } catch (err) {
+                // Fallback to simulated local mode if server is offline
+                isStaticHosted = true;
+                document.getElementById('modeStatus').textContent = 'Live Server Offline. Running Client Simulation Mode';
+                const responseData = { success: true, count: localBooks.length, data: localBooks };
+                updateConsole('GET /api/books (Fallback)', 200, responseData);
+                renderTable(localBooks);
+            }
+        }
+
+        // Render table rows
+        function renderTable(books) {
+            const tbody = document.getElementById('booksTableBody');
+            const emptyNotice = document.getElementById('tableEmpty');
+            tbody.innerHTML = '';
+
+            if (books.length === 0) {
+                emptyNotice.classList.remove('d-none');
+                return;
+            }
+            emptyNotice.classList.add('d-none');
+
+            books.forEach(book => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="fw-bold text-muted">${book.id}</td>
+                    <td class="fw-semibold text-dark">${book.title}</td>
+                    <td>${book.author}</td>
+                    <td><span class="badge bg-light text-dark border">${book.genre || 'N/A'}</span></td>
+                    <td>${book.year || 'N/A'}</td>
+                    <td class="text-end">
+                        <button class="btn btn-sm btn-outline-primary me-1" onclick='editBook(${JSON.stringify(book)})'>
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteBook(${book.id})">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Add or Update Book
+        document.getElementById('bookForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('bookId').value;
+            const payload = {
+                title: document.getElementById('bookTitle').value.trim(),
+                author: document.getElementById('bookAuthor').value.trim(),
+                genre: document.getElementById('bookGenre').value.trim() || 'General',
+                year: document.getElementById('bookYear').value ? parseInt(document.getElementById('bookYear').value, 10) : new Date().getFullYear()
+            };
+
+            const isEdit = Boolean(id);
+
+            if (isStaticHosted) {
+                if (isEdit) {
+                    const numId = parseInt(id, 10);
+                    localBooks = localBooks.map(b => b.id === numId ? { ...b, ...payload, id: numId } : b);
+                    saveLocalBooks();
+                    updateConsole(`PUT /api/books/${id} (Simulated)`, 200, { success: true, message: 'Book updated successfully', data: { ...payload, id: numId } });
+                } else {
+                    const newId = localBooks.length > 0 ? Math.max(...localBooks.map(b => b.id)) + 1 : 1;
+                    const newBook = { id: newId, ...payload };
+                    localBooks.push(newBook);
+                    saveLocalBooks();
+                    updateConsole('POST /api/books (Simulated)', 201, { success: true, message: 'Book added successfully', data: newBook });
+                }
+                resetForm();
+                loadBooks();
+                return;
+            }
+
+            // Real backend call
+            const url = isEdit ? `/api/books/${id}` : '/api/books';
+            const method = isEdit ? 'PUT' : 'POST';
+
+            try {
+                const res = await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await res.json();
+                updateConsole(`${method} ${url}`, res.status, result);
+                resetForm();
+                loadBooks();
+            } catch (err) {
+                updateConsole(method, 500, { error: err.message });
+            }
+        });
+
+        // Delete Book
+        async function deleteBook(id) {
+            if (!confirm(`Delete book #${id}?`)) return;
+
+            if (isStaticHosted) {
+                const target = localBooks.find(b => b.id === id);
+                localBooks = localBooks.filter(b => b.id !== id);
+                saveLocalBooks();
+                updateConsole(`DELETE /api/books/${id} (Simulated)`, 200, { success: true, message: 'Book deleted successfully', data: target });
+                loadBooks();
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/books/${id}`, { method: 'DELETE' });
+                const result = await res.json();
+                updateConsole(`DELETE /api/books/${id}`, res.status, result);
+                loadBooks();
+            } catch (err) {
+                updateConsole(`DELETE /api/books/${id}`, 500, { error: err.message });
+            }
+        }
+
+        // Populate Edit Form
+        function editBook(book) {
+            document.getElementById('bookId').value = book.id;
+            document.getElementById('bookTitle').value = book.title;
+            document.getElementById('bookAuthor').value = book.author;
+            document.getElementById('bookGenre').value = book.genre;
+            document.getElementById('bookYear').value = book.year;
+
+            document.getElementById('formHeading').innerHTML = '<i class="bi bi-pencil-square me-2"></i>Edit Book';
+            document.getElementById('submitBtn').innerHTML = '<i class="bi bi-check2 me-1"></i> Update Book';
+            document.getElementById('cancelBtn').classList.remove('d-none');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Reset Form
+        function resetForm() {
+            document.getElementById('bookForm').reset();
+            document.getElementById('bookId').value = '';
+            document.getElementById('formHeading').innerHTML = '<i class="bi bi-book me-2"></i>Add Book';
+            document.getElementById('submitBtn').innerHTML = '<i class="bi bi-plus-circle me-1"></i> Add Book';
+            document.getElementById('cancelBtn').classList.add('d-none');
+        }
+
+        // Helper to update the output console
+        function updateConsole(endpoint, status, data) {
+            document.getElementById('responseStatus').textContent = `Status: ${status}`;
+            document.getElementById('apiConsole').textContent = `// ${endpoint} (${status})\n` + JSON.stringify(data, null, 2);
+        }
+
+        // Initial load
+        loadBooks();
+    </script>
+</body>
+</html>
